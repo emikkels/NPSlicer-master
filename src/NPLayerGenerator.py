@@ -463,9 +463,6 @@ class NPLayerGenerator():
         colormap = generate_random_cmap(n)
             
         colors = colormap(scalar_field[vis_dense]/s_max)[:, :3]  # Map scalar field values to colors
-        # colors = cm.jet(scalar_field[vis_dense]/np.max(scalar_field[vis_dense]))[:, :3]  # Map scalar field values to colors
-        # colors = cm.tab20(scalar_field[vis_dense]/np.max(scalar_field[vis_dense]))[:, :3]  # Map scalar field values to colors
-        # colors = cm.viridis(scalar_field[vis_dense]/np.max(scalar_field[vis_dense]))[:, :3]  # Map scalar field values to colors
 
         # Transform points from voxel grid to real world coordinates
         points = np.argwhere(vis_dense).astype(np.float64)
@@ -502,7 +499,6 @@ class NPLayerGenerator():
         width = int(scale*2560)
         height = int(scale*1440)
         vis.create_window(window_name='Isosurfaces', width=width, height=height, visible=True)
-        # vis.create_window()
         geometries = []
 
         if meshes is None:
@@ -615,22 +611,12 @@ class NPLayerGenerator():
         overhang_2d = overhang_voxels[:, dense.shape[1]//2, :]        
         overhang_mask_2d = overhang_mask[:, dense.shape[1]//2, :]
         
-        # # 2d slice in yz-plane
-        # dense_2d = dense[dense.shape[0]//2, :, :]
-        # overhang_2d = overhang_voxels[dense.shape[0]//2, :, :]
-        # overhang_mask_2d = overhang_mask[dense.shape[0]//2, :, :]
-    
         fig, ax = plt.subplots(2, 3, figsize=(16, 10))
         
         red_cmap = ListedColormap(['white', 'red'])
         green_cmap = ListedColormap(['white', 'green'])
         
-        # bp1 = Rectangle((0,0), dense_2d.shape[0], 2, linewidth=1, edgecolor='black', facecolor='black')
-        # bp2 = Rectangle((0,0), dense_2d.shape[0], 2, linewidth=1, edgecolor='black', facecolor='black')
-        # bp3 = Rectangle((0,0), dense_2d.shape[0], 2, linewidth=1, edgecolor='black', facecolor='black')
-        # bp4 = Rectangle((0,0), dense_2d.shape[0], 2, linewidth=1, edgecolor='black', facecolor='black')
-        # bp5 = Rectangle((0,0), dense_2d.shape[0], 2, linewidth=1, edgecolor='black', facecolor='black')
-        
+
         # Set gridlines
         for i in range(2):
             for j in range(3):
@@ -640,8 +626,6 @@ class NPLayerGenerator():
                 ax[i,j].set_yticklabels([])
                 ax[i,j].grid(color='w', linestyle='-', linewidth=0.5)
 
-        
-        
         # Dense voxel grid
         ax[0,0].imshow(dense_2d.T, cmap=green_cmap, origin='lower')
         # ax[0,0].add_patch(bp1)
@@ -728,7 +712,6 @@ class NPLayerGenerator():
         img = np.zeros_like(padded_dense_2d, dtype=np.uint8)
         
         img[dense_2d] = 1
-        # overhang_2d[dense_2d] = np.nan
         img[overhang_2d] = 2
         img[padded_dense_2d & ~dense_2d] = 3
         img[padded_overhang_2d & ~overhang_2d] = 4
@@ -807,7 +790,6 @@ class NPLayerGenerator():
         ax[0].grid(color='w', linestyle='-', linewidth=0.5)
 
         cbar0 = ax[0].figure.colorbar(cm.ScalarMappable(cmap=ListedColormap(['white', 'green', 'red'])), ax=ax[0], orientation='horizontal')
-        # cbar0 = ax[0].figure.colorbar(cm.ScalarMappable(cmap=ListedColormap(['white', 'green', 'red'])), ax=ax[0], orientation='vertical', shrink=2/3)
         cbar0.set_ticks([1/6, 0.5, 5/6])  
         cbar0.set_ticklabels(['Empty', 'Supported', 'Overhang'])
 
@@ -816,7 +798,6 @@ class NPLayerGenerator():
                     
         ax[1].imshow(distance_field_2d, cmap='jet', origin='lower')
 
-        
         ax[1].set_title('b) Distance Field')
         ax[1].set_xticks(np.arange(-0.5, dense_2d.shape[1], 1))
         ax[1].set_yticks(np.arange(-0.5, dense_2d.shape[0], 1))
@@ -825,14 +806,12 @@ class NPLayerGenerator():
         ax[1].grid(color='w', linestyle='-', linewidth=0.5)
         
         # Colorbar
-        # ticks = np.arange(0, np.max(distance_field_2d[dense_2d])+1, 2)
         n_ticks = 11
         ticks = np.linspace(0, np.max(distance_field_2d[dense_2d]), n_ticks).astype(int)
         
         normalized_ticks = ticks/np.max(ticks)
 
         cbar1 = ax[1].figure.colorbar(cm.ScalarMappable(cmap='jet'), ax=ax[1], orientation='horizontal')
-        # cbar1 = ax[1].figure.colorbar(cm.ScalarMappable(cmap='jet'), ax=ax[1], orientation='vertical', shrink=2/3)
         cbar1.set_ticks(normalized_ticks)
         cbar1.set_ticklabels(ticks)
         
@@ -859,9 +838,6 @@ class NPLayerGenerator():
         nonplanar_field[~dense] = np.nan
         planar_field[~dense] = np.nan
         
-        # planar_colormap = generate_random_cmap(np.max(planar_field))
-        # scalar_colormap = generate_random_cmap(np.max(scalar_field))
-        
         planar_colormap = cm.jet
         scalar_colormap = cm.jet
         
@@ -878,12 +854,9 @@ class NPLayerGenerator():
         dense_2d = np.pad(dense_2d, 1, mode='constant', constant_values=0)
         nonplanar_field_2d = np.pad(nonplanar_field_2d, 1, mode='constant', constant_values=np.nan)
         planar_field_2d = np.pad(planar_field_2d, 1, mode='constant', constant_values=np.nan)
-        
-        
-        
+    
         fig, ax = plt.subplots(1, 3, figsize=(18, 9))
-         
-                    
+                        
         ax[0].imshow(dense_2d, cmap='Greys', origin='lower', alpha=0.5)
         ax[0].set_title('a) Dense Voxel Grid')
         ax[0].set_xticks(np.arange(-0.5, dense_2d.shape[1], 1))
@@ -916,7 +889,6 @@ class NPLayerGenerator():
         ticks = np.arange(0, np.max(nonplanar_field_2d[dense_2d])+1, 1).astype(int)
         ticks_normalized = ticks/np.max(ticks)
         cb = ax[2].figure.colorbar(cm.ScalarMappable(cmap=scalar_colormap), ax=ax, orientation='horizontal')
-        # cb = ax[2].figure.colorbar(cm.ScalarMappable(cmap=scalar_colormap), ax=ax, orientation='vertical', shrink=2/3)
         cb.set_ticks(ticks_normalized)
         cb.set_ticklabels(ticks)
         cb.set_label('Scalar field value', fontsize=14, labelpad=10)
@@ -1001,18 +973,10 @@ class NPLayerGenerator():
         ax.arrow(0.85, 0.94, -0.6, 0.0, head_width=0.05, head_length=0.1, fc='g', ec='black')
         ax.arrow(0.075, 0.9, 0.0, -0.6, head_width=0.05, head_length=0.1, fc='g', ec='black')
         
-        
-        
-
-        
-        
-        
         for x in xs:
             for y in ys:
                 ax.scatter(x, y, color='black', s=20)
-        
-        
-        
+             
         ax.set_aspect('equal')
         ax.set_xticks([])
         ax.set_yticks([])
@@ -1033,9 +997,6 @@ class NPLayerGenerator():
         xs = np.arange(size)
         ys = np.arange(size)
         
-        
-        
-        
         def get_triangles(x, y):
             triangles = []
             v1 = [x, y]
@@ -1045,10 +1006,6 @@ class NPLayerGenerator():
             triangles.append([v1, v2, v3]) 
             triangles.append([v1, v3, v4])
             return triangles
-        
-        
-        
-        
         
         triangles = []
         for x in xs[:-1]:
@@ -1088,12 +1045,8 @@ class NPLayerGenerator():
         
         safe_z = 2.5
         
-        line1 = [
-            [1, 1, 3, 3],
-            [1, safe_z, safe_z, 2]
-        ]
-        
-        
+        line1 = [[1, 1, 3, 3],
+                [1, safe_z, safe_z, 2]]
         ax.plot(line1[0], line1[1], c='g', label='Safe travel line', lw=2)
     
         ax.scatter(1, 1, c='r', label='Start point')
@@ -1101,22 +1054,16 @@ class NPLayerGenerator():
     
         # Safe-z line
         ax.hlines(safe_z, 0.9, 3.1, color='gray', ls='dashdot', label='Safe z-level')
-    
-    
+        
         ax.set_aspect('equal')
-        
-        
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=18)
-        
-        
         ax.set_xticks([])
         ax.set_yticks([])
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
-        
-        
+
         plt.show()
         fig.savefig('travel.png', dpi=300, bbox_inches='tight')
 
@@ -1125,11 +1072,7 @@ class NPLayerGenerator():
         
         zs = interpolate_z_crossing(scalar_field, 70)
         
-        
         # Flat mesh
-        
-        
-        
         vertices, triangles = get_grid_mesh(zs)
         vertices = flatten_negative_vertices(vertices)
         mesh = trimesh.Trimesh(vertices=vertices, faces=triangles)
@@ -1300,7 +1243,7 @@ def mesh_intersection(mesh:trimesh.Trimesh, cutting_mesh:trimesh.Trimesh, np_ang
 
 def filter_by_normals(mesh:trimesh.Trimesh, max_angle:float=45.) -> trimesh.Trimesh:
     # Removes faces where the angle between face normal and z-axis exceeds max_angle
-    # max_angle: maximum angle in degrees (default = 45, hardware limitation from E3D belt nozzle)
+    # max_angle: maximum angle in degrees
 
     layer_normals = mesh.face_normals
     z_axis = np.array([0, 0, 1])

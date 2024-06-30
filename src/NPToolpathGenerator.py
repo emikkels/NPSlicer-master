@@ -78,7 +78,7 @@ class ToolpathGenerator:
         self.mesh.merge_vertices(digits_vertex=2)
         self.mesh.update_faces(self.mesh.nondegenerate_faces())
         self.mesh = self.mesh.simplify_quadric_decimation(len(self.mesh.faces) // 1.1)
-        # self.mesh.update_faces(self.mesh.nondegenerate_faces())
+        
         
         self.mesh.remove_unreferenced_vertices()
         self.mesh.update_faces(self.mesh.nondegenerate_faces())
@@ -86,7 +86,7 @@ class ToolpathGenerator:
         self.boundary_vertices = find_closed_contours(self.mesh, show=False)
 
         # Get boundary polygons from mesh edges
-        self.create_boundary_polygons(self.boundary_vertices)
+        self.create_boundary_polygons()
         
         self.set_boundary_start() 
         self.boundary_hierarchy = self.generate_boundary_hierarchy()    
@@ -109,7 +109,7 @@ class ToolpathGenerator:
         self.project_toolpath_to_mesh()
         self.added_toolpaths = self.to_gcode(translate_xy=translate_xy)
     
-    def create_boundary_polygons(self, boundary_vertices) -> None:
+    def create_boundary_polygons(self) -> None:
         boundary_polygons = [sg.Polygon(boundary) for boundary in self.boundary_vertices]
         for i, polygon in enumerate(boundary_polygons):
             if polygon.geom_type == 'MultiPolygon':
@@ -157,13 +157,9 @@ class ToolpathGenerator:
             if self.is_nonplanar():
                 z_max_index = np.argmax(exterior_coords[:, 2])
                 z_max_pos = exterior_coords[z_max_index]
-                z_max = z_max_pos[2]
                 z_max_2d = z_max_pos[:2]
                 
                 _, start_index = polygon_tree.query(z_max_2d)
-                start_pos = exterior_coords[start_index]
-                
-                pass
             else:
                 _, start_index = polygon_tree.query(np.array(self.seam_position))
             new_coords = np.concatenate((exterior_coords[start_index:], exterior_coords[:start_index]))
@@ -292,10 +288,6 @@ class ToolpathGenerator:
     def adjust_perimeter_number(self) -> None:
         # Adjust the number of perimeters to avoid self-intersections
         hierarchy = self.boundary_hierarchy
-
-        hierarchy_keys = list(hierarchy.keys())
-        hierarchy_values = list(hierarchy.values())
-        
         sorted_levels = sorted(set([data['level'] for data in hierarchy.values() if data['level'] is not None]))
         for level in sorted_levels:
             next_level = level + 1 if level is not None else 1
@@ -351,16 +343,6 @@ class ToolpathGenerator:
                     offset_perimeters.append(offset_perimeter)
 
                 for offset_perimeter in offset_perimeters:
-                    # Ensure correct start point
-                    # if self.seam_position is not None:
-                    #     exterior_coords = np.array(offset_perimeter.exterior.coords)
-                    #     exterior_coords2D = exterior_coords[:, :2]
-                    #     polygon_tree = KDTree(exterior_coords2D)
-                    #     _, start_index = polygon_tree.query(np.array(self.seam_position))
-                    #     exterior_coords = np.concatenate((exterior_coords[start_index:], exterior_coords[:start_index]))
-                    #     offset_perimeter = sg.Polygon(exterior_coords)
-
-
                     # Ensure correct orientation
                     if self.perimeter_orientation == 'cw' and offset_perimeter.exterior.is_ccw:  # If the perimeter should be oriented clockwise and the contour is counter clockwise, reverse the contour
                         offset_perimeter = offset_perimeter.reverse()
@@ -470,7 +452,6 @@ class ToolpathGenerator:
             self.piecewise_ordered_infill_lines = None
             self.grouped_infill_lines = None
             return 
-        # angle: angle of the infill lines with respect to the x-axis
         
         # Create a polygon representing each infill region 
         outer_polygons = []
@@ -680,7 +661,6 @@ class ToolpathGenerator:
             for boundary, data in self.infill_boundaries.items():
                 line_sg = sg.LineString(line)
                 line_midpoint = sg.Point(line_sg.interpolate(0.5, normalized=True))
-                closed_boundary = sg.LinearRing(boundary.exterior)
                 if boundary.contains(line_midpoint):
                     if data['parent'] not in grouped_infill_lines:
                         grouped_infill_lines[data['parent']] = []
@@ -879,15 +859,6 @@ class ToolpathGenerator:
                     infill_lines = None
                     infill_line_types = None
 
-                if False:
-                    fig, ax = plt.subplots()
-
-
-                    
-                    ax.set_aspect('equal')
-                    plt.show()
-                    plt.close(fig)
-
                 # Combine the perimeters and infill with same parent with travels in between
                 combined_edges = []
                 combined_types = []
@@ -1000,8 +971,6 @@ class ToolpathGenerator:
                 extrusion_distances.append(0)
                 projected_edges.append([start, end])
                 continue
-            
-            
             
             if self.prev_layer is not None:
                 if isinstance(extrusion_height_interp, LinearNDInterpolator):
@@ -1319,16 +1288,6 @@ class ToolpathGenerator:
 
 
             if self.is_last_layer:
-                # After end of last layer:
-                #   - wipe nozzle
-                #   - retract
-                #   - turn off heaters
-                #   - turn off fan
-                #   - move up
-                #   - present print(move to ~ymax)
-                #   - home x
-                #   - turn off motors
-
                 # Wipe (set relative mode, move to X2.0, Y2.0)
                 f.write('G91 ; relative mode\n')
                 f.write(f'G1 X2.0 Y2.0 E-0.4 F{travel_feedrate} ; wipe and retract\n')
@@ -1367,14 +1326,9 @@ class ToolpathGenerator:
         fig, ax = plt.subplots(1, 1, figsize=(16, 10))
         ax.set_aspect('equal')
         
-        for i, perimeter in enumerate(self.perimeters.items()):
+        for _, perimeter in enumerate(self.perimeters.items()):
             if perimeter[0].is_empty:
                 continue
-            # if perimeter[0].geom_type == 'MultiPolygon':
-            #     for poly in perimeter[0].geoms:
-            #         x, y = poly.exterior.xy
-            #         ax.plot(x, y)
-            #         ax.scatter(x[0], y[0], c='k', s=10)
 
             if perimeter[1]['perimeter_number'] == 1:
                 x, y = perimeter[0].exterior.xy
@@ -1512,9 +1466,6 @@ class ToolpathGenerator:
 
     def show_combined_toolpath(self) -> None:
         # Visualize the combined toolpath
-        
-        
-        
         fig, ax = plt.subplots(figsize=(16, 10))
         ax.set_aspect('equal')
         for i, edge in enumerate(self.combined_toolpath_edges):
